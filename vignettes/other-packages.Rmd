@@ -1,0 +1,417 @@
+---
+title: "Other Packages for Growth Curve Analysis"
+author: "Nicolas Coutin"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Other Packages for Growth Curve Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(tidyverse)
+library(tidytext)
+db <- tools::CRAN_package_db()
+d <- as_tibble(db, .name_repair = 'unique')
+
+
+tokens <- d %>% 
+    select(Package, Title, Description) %>% 
+    unite(title_description, Title, Description, sep = ' ') %>% 
+    unnest_tokens(word, title_description)
+clean_tokens <- tokens %>% 
+    anti_join(get_stopwords(), by = "word") 
+```
+
+## Find other CRAN packages with similar scope
+
+- I tokenized the title and description sections of all CRAN packages.
+- Cleaned them by removing stop words.
+
+```{r, query}
+query <- 'growt?h?'
+matches <- clean_tokens %>% 
+  filter(str_detect(word, query)) %>% 
+  distinct(Package)
+```
+
+Read through
+
+```{r}
+d %>% 
+  semi_join(matches, by = "Package") %>% 
+  select(Package, Title, Description) %>% 
+  gt::gt()
+```
+
+
+
+```{r}
+to_exclude <- trible(
+  ~pkg, ~reason,
+  'AGD',
+  'AMORE',
+  'aqp',
+  'BIOdry',
+  'childsds',
+  'chillR',
+  'BIOdry',
+  'childsds',
+  'chillR',
+  'colorednoise',
+  'dcv',
+  'DDM',
+  'DendroSync',
+  'dequer',
+  'Dowd',
+  'dplRCon',
+  'Ecohydmod',
+  'embyrogrowth',
+  'erer',
+  'FCGR',
+  'fcr',
+  'fdq',
+  'Fgmutils',
+  'fishdata',
+  'forestmangr',
+  'frambgrowth',
+  'GDELTtools',
+  'ggfittext',
+  'GDELTtools',
+  'GillespieSSA', # perhaps usefl but orhphaned and oto complicated.
+  'GlobalFit', # mayb useufl but too complicated
+  'gym',
+  'halfcircle',
+  'imageData',
+  'InfDim',
+  'IPMpack',
+  'iRF',
+  'ITGM',
+  'jubilee',
+  'Lambda4',
+  'landscapeR',
+  'LifeHist',
+  'live',
+  'memnet',
+  'MST',
+  'multilaterals',
+  'nsRFA',
+  'numOSL',
+  'osmose',
+  'OTE',
+  'PCMBase',
+  'PointFore',
+  'pollen',
+  'popdemo',
+  'Pstat',
+  'quint',
+  randomUniformForest
+  rmutil
+  rpartScore
+  RStorm
+  rtrim
+  sclero
+  SeedCalc
+  SGP
+  SGPdata
+  ShapePattern
+  ShapeSelectForest
+  shelltrace
+  sitreeE
+  sizeMat
+  stocks
+  StratifiedRF
+  streambugs
+  sybilccFBA # flux balance analysis
+  TGS
+  TTCA
+  ufs
+  vegperiod
+  zipfR
+  zscorer
+  
+  
+  
+
+  
+  
+  
+)
+to_exclude
+```
+
+
+## Test Drive Other Packages:
+
+### babar
+
+```{r, eval=FALSE}
+# install.packages('babar')
+library(babar)
+utils::browseVignettes('babar')
+```
+
+Bayesian fit of standard growth models:
+
+1. `Bayesfit()` one of linear, logistic or Baranyi. 3,4,6 parameter variants of baranyi models available.
+2. nested sampling to compare if two data samples represent the same underlying sample (like a t-test but bayes style). 
+  - calculate baye's evidence for each model and return the difference between the two.
+  - use jeffrey's scale to extract the answer.
+
+
+### BaTLFED3D
+
+too complicated/unclear if appropriate and I don't understand how to use confidently.
+
+### blavaan
+
+latent growth curve models, 
+requires I `brew install jags` and get the `blavaan` and `runjags` and `rjags`
+
+```{r}
+# install.packages('blavaan')
+# install.packages("runjags")
+# install.packages("rjags")
+library(blavaan)
+# utils::browseVignettes('blavaan')
+library(runjags)
+library(rjags)
+# brew install jags
+?bgrowth
+```
+
+```{r}
+model.syntax <- '
+  # intercept and slope with fixed coefficients
+    i =~ 1*t1 + 1*t2 + 1*t3 + 1*t4
+    s =~ 0*t1 + 1*t2 + 2*t3 + 3*t4
+
+  # regressions
+    i ~ x1 + x2
+    s ~ x1 + x2
+
+  # time-varying covariates
+    t1 ~ c1
+    t2 ~ c2
+    t3 ~ c3
+    t4 ~ c4
+'
+Demo.growth
+fit <- bgrowth(model.syntax, data=Demo.growth)
+summary(fit)
+```
+
+
+
+### cellVolumeDist
+
+
+```{r}
+install.packages('cellVolumeDist')
+```
+
+
+### diffusion
+
+Model innovation/ new product diffusion into a population over time. This seems to be a companion package to the 25 year review published at `10.1016/j.ijforecast.2006.01.005`.
+
+### diskImageR
+
+disk diffusion drug resistance microbes on plates.
+
+### epitrix
+
+Just the one function that computes R0 dist from growth rate vector seems interesting.
+
+<http://www.repidemicsconsortium.org/epitrix/reference/r2R0.html>
+
+### eyetrackingR
+
+has a [vignette](https://cran.r-project.org/web/packages/eyetrackingR/vignettes/growth_curve_analysis_vignette.html) on growth curve analysis but it is mostly confusing..fits polynomial models..
+
+### facilitation
+
+full on simulation of individual-based models to reconstitue plant-plant interaction dyanmics.
+
+```{r}
+# install.packages('facilitation')
+library(facilitation)
+browseVignettes('facilitation')
+rates <- matrix(c(1,0,2),nrow=1) # parameters must be in a matrix
+results <- community(maxtime=2,numstages=1,parameters=rates,init=10)
+results$data %>% 
+  ggplot(aes(x,y, label = id)) + 
+  geom_text()
+```
+
+The faciliation vignette is great and allows for easy gif generation of spatial animation.
+
+```{r}
+maxt<-40 # this is gonna take a while
+rates <- matrix(c(0,1,0,2,.7,4, 1,1,0,2,1.2,0, 1,0,6,2,2,0),nrow=3,byrow=T) # maximum stress effect is 4 for stage 1 and 0 for stages 2 and 3
+results5 <- community(maxtime=maxt,numstages=3,parameters=rates,init=c(40,0,0),
+                      interactionsD=matrix(c(-2,0,0, 0,0,0, 0,0,0),3)) # competition is only between seedlings
+times <- seq(0,results$maxtime,length.out=20)         # array of times of interest
+spatialanimation(results,times,interval=0.1,movie.name="sim.gif") 
+```
+
+### fracprolif
+
+fracprolif models of growth data with subset of population that enters quiescnece
+
+### fwsim
+
+population simulation with fisher-wirght model with intermediate saving and implemented in rcpp.
+
+ <https://arxiv.org/pdf/1210.1773.pdf>
+ 
+ 
+### growcurves
+
+```{r}
+library(growcurves) # depends on rcpp armadillo and formaula...
+browseVignettes('growcurves') # none
+data(datsim)
+## attach(datsim)
+## run dpgrow mixed effects model, returning object of class "dpgrow"
+shape.dp	= 4
+res		= dpgrow(y = datsim$y, subject = datsim$subject, 
+			trt = datsim$trt, time = datsim$time,
+			n.random = 3, n.fix_degree = 2, 
+			n.iter = 10000, n.burn = 2000, 
+			n.thin = 10, shape.dp = shape.dp, 
+			option = "dp")
+## Each plot is a "ggplot2" object saved in 
+## a list to plot.results
+plot.results	= plot(res) ## includes subject and 
+##                    treatment growth curves
+## Extract credible intervals (2.5%, mean, 97.5%).
+## Includes fit statistics:  Dbar, DIC, pD, lpml.  
+## Note: DIC is the DIC3 of Celeaux et. al. (2006) 
+## for option = "dp".  Finally, the constructed fixed
+## and random effects matrices, X and Z, are returned 
+## with growth curve covariates appended 
+## to user submitted nuisance covariates. 
+summary.results = summary(res)
+## View the summary results in the console
+print(summary.results)
+## Collect posterior sampled values over 
+## the (n.iter - n.burn) retained iterations 
+## for each sampled parameter.  
+samples.posterior	= samples(res)
+## model residuals (y - fit)
+residuals		= resid(res) 
+## Model with DP on clients effects, but 
+## now INCLUDE session random effects
+## in a multiple membership construction 
+## communicated with the N x S matrix, W.subj.aff.
+## Returns object, res.mm, of class "dpgrowmm".
+shape.dp	= 4
+strength.mm	= 0.1
+res.mm	= dpgrowmm(y = datsim$y, subject = datsim$subject, 
+                     trt = datsim$trt, time = datsim$time, 
+		n.random = 3, 
+		Omega = datsim$Omega, group = datsim$group, 
+		subj.aff = datsim$subj.aff,
+		W.subj.aff = datsim$W.subj.aff, 
+		n.iter = 10000, n.burn = 2000, n.thin = 10,
+		strength.mm = strength.mm, 
+		shape.dp = shape.dp, 
+		option = "mmcar")
+plot.results		= plot(res.mm)
+```
+
+
+### growth
+
+### growthcurver
+
+### growthmodels
+
+### growthrate
+
+### growthrates
+
+### hamlet
+
+tumor growth response patterns
+
+### microPop
+
+solve diff equations to model microbial populations
+
+### OLScurve
+
+ordinary least sequare growth cruve trajectories
+
+## other pkgs in the maybe category:
+
+```{r, eval=FALSE}
+petitr
+phenofit
+PVAClone
+quantregGrowth
+sgmodel
+sicegar
+sitar
+statmod # growth curve comparisons
+testassay # illustrate tools by applying to growth inihibition assay
+tumgr # tumor growth rate analysis
+
+```
+
+
+----
+
+Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+
+- Never uses retina figures¡¡
+- Has a smaller default figure size
+- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))

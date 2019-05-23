@@ -1,0 +1,119 @@
+---
+title: "ACCESS | The OD generation point"
+author: "npjc"
+date: "10/03/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readyg)
+```
+
+## Overview
+
+In my trying to understand how ACCESS generates its numbers I had to understand what they call the od generation point... what a mess
+
+
+```{r, cache=TRUE}
+files <- list.files('~/data/yeast-grower-db/db/01', full.names = T)
+
+d <- tibble(file = files,
+       content = map(files, read_yg)) %>% 
+    unnest(content)
+run_params <- d %>% 
+    filter(!map_lgl(run_params, is.null)) %>% 
+    unnest(run_params)
+```
+
+What are all the different types and values of OD generation point from a sample of `r length(files)` yeast grower files?
+
+```{r}
+run_params %>% 
+    filter(str_detect(key, 'od_gen_pt')) %>% 
+    count(key, value)
+```
+
+- There is only one for 96 wells: `od_gen_pt_96 = 0.46`
+- For 48 well plates it is most often set to `0.76` but sometimes `0.46` .. this seems like a mistake carrying over the value from 96 well leading to serious overestimation of the average amount of time per generation...
+
+From the ACCESS text:
+
+> $OD_5$ generations, the calibrate OD equivalent to five generations, also called the OD generation point, is indicated by (\*). The time interval for `G_by_interval` is calculated back four doubling (**4G**) from $OD_5$ generations (\*).
+
+- `Avg_G` is the average generation time from start to the OD generation point and includes both lag and exponential phases in its calculation
+- `G_by_interval` calculates the doubling time of the exponential growth phase by excluding the first doubling from the calculation and estimates lag phase. 
+
+## fix this bb
+
+
+Get all the files that are 96 well runs:
+```{r}
+files_of_96 <- run_params %>% filter(key == 'plate_size', value == '96')
+d96 <- d %>% 
+    semi_join(files_of_96)
+d96_data <- unnest(d96, data)
+d96_run_params <- unnest(d96, run_params)
+d96_data %>% 
+    group_by(file, well) %>% 
+    summarise(min_value = min(value),
+              max_value = max(value)) %>% 
+    filter(!is.na(min_value), min_value < 0.5) %>% 
+    ggplot() +
+    geom_density(aes(min_value))
+```
+
+If we look at the run paramters, there are only two kinds of plate specifications provided (greison or nunc) and the defined 'od tecan equivalent to 5 generations of growth IF your initial suspension is od595)
+
+```{r}
+d96_run_params %>% spread(key, value) %>% select(plate_size, plate_type, gens_to_od_pt_96,od_gen_pt_96) %>% distinct()
+```
+
+- Shake mode is _always_ 'Orbital'
+- Shake intensity is _almost always_ 'high'
+- Shakre duration is _almost always_ '800,0' this isn't documented anywhere but I assume that is shaking duration in seconds since 800 seconds is 13 minutes and 20 seconds and the usual measurement interval is 15 minutes (900 seconds).
+
+```{r}
+filtered_set96 <- d96_run_params %>% 
+    spread(key, value) %>% 
+    filter(shake_mode == 'Orbital',
+           shake_intensity %in% c('high', 'High'),
+           shake_duration == '800,0') %>% 
+    distinct(file)
+```
+
+The $OD_{tecan}$ for $OD_{biophotometer} = 0.0625$ seems to be ~ `0.0625` 
+
+```{r}
+filtered_d96_data <- d96 %>% 
+    semi_join(filtered_set96) %>% 
+    unnest(data)
+
+filtered_d96_data %>% 
+    group_by(file, well) %>% 
+    summarise(min_value = min(value),
+              max_value = max(value)) %>% 
+    filter(!is.na(min_value), min_value < 0.3) %>%
+    ggplot() +
+    geom_density(aes(min_value)) + 
+    geom_vline(xintercept = 0.0625, lty = 'dashed', size = 0.5) + 
+    scale_x_continuous(labels = c(0, 0.0625, 0.1, 0.2, 0.3), breaks = c(0, 0.0625, 0.1, 0.2, 0.3))
+```
+
+$$
+OD_{tecan,96MTP,AB580film} = OD_{biophotometer} \cdot x + ???
+$$
+
+
+For a 96 well plate:
+
+$$
+Avg\_G = \frac{T_{OD_{tecan} = 0.46}}{5}
+$$
+
+For a 48 well plate:
+
+$$
+Avg\_G = \frac{T_{OD_{te}}{5}
+$$

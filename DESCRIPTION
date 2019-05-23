@@ -1,0 +1,19 @@
+Package: growr
+Title: High level functions to help summarise growth curve fits.
+Version: 0.0.0.9000
+Authors@R: person("Nicolas", "Coutin", , "nicolas.coutin@gmail.com", c("aut", "cre"), comment = c(ORCID = "0000-0001-9336-226X"))
+Maintainer: Nicolas Coutin <nicolas.coutin@gmail.com>
+Description: Preprocessing, summarising and flexible grouping specification of growth curves.
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 2.1.0)
+VignetteBuilder: knitr
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 6.1.1
+Imports: 
+    stats,
+    tibble

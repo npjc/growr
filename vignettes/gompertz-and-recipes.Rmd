@@ -1,0 +1,173 @@
+---
+title: "Implementing Gompertz and recipes"
+author: "Nicolas Coutin"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r load}
+# library(tidyverse)
+# library(recipes)
+```
+
+what is the model fitting I'm trying to do?
+
+1. primary model : od as fxn of time
+
+
+2. secondary model: the derived values $\mu$ $\lambda$ $lag$
+
+
+## Primary Models
+
+Gompertz's standard equation:
+
+...parametrized for $A$, $\mu$ and $\lambda$
+
+$$
+y(t) = A \cdot exp [-exp(\frac{\mu \cdot e}{A}(\lambda - t) + 1)]
+$$
+
+Start from the a,b,c form:
+
+$$
+y = a \cdot exp[-exp(b -cx)]
+$$
+
+Maximum growth rate is defined as second derivative going to 0 (inflection point):
+
+$$
+\frac{d^2y}{dt^2} = 
+a c \cdot exp(-exp(b - c t) + b - c t) \cdot (c \cdot exp(b - c t) - c)
+$$
+alternate form:
+
+$$
+\frac{d^2y}{dt^2} = 
+a c^2 \ exp[-exp(b - c t) + b - c t] \cdot [exp(b - c t) - 1]
+$$
+root for t is given by
+
+$$
+t_i = \frac{b}{c}
+$$
+
+now substitute that result into first derivative:
+
+$$
+ac \cdot exp[-exp(b - c \cdot t_i)] \cdot exp(b - c \cdot t_i)
+$$
+
+$$
+ac \cdot exp[-exp(b - c \cdot \frac{b}{c})] \cdot exp(b - c \cdot \frac{b}{c})
+$$
+
+$$
+ac \cdot exp[-exp(b - b)] \cdot exp(b - b)
+$$
+$$
+ac \cdot exp[-exp(0)] \cdot exp(0)
+$$
+$$
+ac \cdot exp[-1] \cdot 1
+$$
+
+$$
+\mu_m = ac \cdot exp[-1] = 0.3679ac = \frac{ac}{exp(1)} = \frac{ac}{e}
+$$
+So c in grompertz equation can be substituted for:
+
+$$
+c = \frac{\mu_m \cdot e}{a}
+$$
+
+tangent line throught the inflection point:
+
+$$
+y = \mu_m \cdot t + b
+$$
+$$
+y = \mu_m \cdot t + b
+\\
+\frac{y - b}{t} = \mu_m = 
+$$
+
+$$
+y = a \cdot exp[-(exp(b) / exp(cx)]
+$$
+
+
+$$
+y(t) = \alpha \cdot exp(-\beta \cdot exp(-k^t))
+$$
+
+
+As an `R` function:
+
+```{r}
+#' The function calculates the values of the Gompertz growth curve for given time points.
+#'
+#' @param time Time points (x-axes) for which the function values will be returned.
+#' @param A Maximum of the curve.
+#' @param mu Maximum slope.
+#' @param lambda Lag phase
+grofit_gompertz <- function (time, A, mu, lambda) {
+    A * exp(-exp(mu * exp(1) * (lambda - time) / A + 1.0))
+}
+```
+
+use this to generate some data with known values:
+
+- 96 time points, one every 15 mintues.
+- maximum of 2
+- growth rate of 0.005
+
+```{r}
+time <- 1:96 * 15
+y <- grofit_gompertz(time, A = 2, mu = 0.005, lambda = max(time) * 0.1) + rnorm(96,mean = 0.01, sd = 0.05)
+data <- data.frame(time, y)
+plot(data)
+```
+
+
+Formula:
+
+```r
+y ~ gompertz(x, A, mu, lambda)
+```
+
+```{r}
+data <- data$y
+time <- time
+formula <- y ~ grofit_gompertz(time, A, mu, lambda)
+fit <- nls(formula, 
+           data = data,
+           start = list(A = 1, mu = 0.01, lambda = 120))
+plot(fit)
+coef(fit)
+coef(summary(fit))
+broom::tidy(fit)
+broom::glance(fit)
+broom::augment(fit) %>% 
+  ggplot(aes(x = time)) + 
+  geom_point(aes(y = y)) +
+  geom_line(aes(y = .fitted), color = 'blue')
+
+broom::augment(fit) %>% 
+  ggplot(aes(x = .fitted, y = .resid)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm')
+
+```
+

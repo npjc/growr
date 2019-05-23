@@ -1,0 +1,170 @@
+---
+title: "how-access-works"
+author: "npjc"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readyg)
+theme <- theme_bw() +
+  theme(panel.grid.minor = element_blank(),
+         panel.grid.major = element_line(size = 0.1))
+ggplot2::theme_set(theme)
+vline_label <- function(data, x, label = deparse(x)) {
+    list(
+        geom_vline(data = data, 
+               aes_string(xintercept = x), 
+               size = 0.25),
+    geom_text(data = data, 
+              aes_string(x = x, y = '0', label = label), 
+              family = "Helvetica", 
+              angle = 90, 
+              hjust = 'left', 
+              color = 'white', 
+              fontface = 'bold'),
+    geom_text(data = data, 
+              aes_string(x = x, y = '0', label = label), 
+              angle = 90, 
+              hjust = 'left')
+    )
+}
+
+hline_label <- function(data, y, label = deparse(y)) {
+    list(
+        geom_hline(data = data, 
+               aes_string(yintercept = y), 
+               size = 0.25),
+    geom_text(data = data,
+              aes_string(x = '0', y = y, label = label),
+              family = "Helvetica",
+              hjust = 'left',
+              color = 'white',
+              fontface = 'bold'),
+    geom_text(data = data, 
+              aes_string(x = '0', y = y, label = label), 
+              hjust = 'left')
+    )
+}
+
+```
+
+## an example file
+
+```{r one-file}
+file <- '~/data/yeast-grower-db/db/07/01_04_14_AstraZeneca_maxdose_ps1_A_96_T_10.txt'
+contents <- read_yg(file)
+contents %>% unnest(data)
+analysis_section <- readyg:::read_ini_section(file, 'Analysis')
+one_well <- contents %>% unnest(data) %>% filter(well == 'A01')
+one_well <- mutate(one_well, runtime_h = runtime / 3600)
+one_well_analysis <- analysis_section %>% 
+    mutate(value = map_chr(value, ~unlist(str_split(.x, ','))[1])) %>% 
+    spread(name, value, convert = T)
+
+```
+
+```{r}
+one_well %>% 
+    ggplot(aes(x = runtime_h, y = value)) + 
+    geom_point() + 
+    vline_label(one_well_analysis, 'Time_to_each_n_Gens') + 
+    vline_label(one_well_analysis, 'gen_time_cutoff') + 
+    geom_line()
+```
+
+- **`OD_saturation`**: OD at which there is no longer any growth
+- **`Time_Saturation`**: Time that growth saturates can also be labeled as the stationary phase. After $T_{saturation}$ the curve is either flat or with a linear slope. 
+    - Determined by examining the first and second derivatives
+
+```{r, echo=FALSE}
+one_well %>% 
+    ggplot(aes(x = runtime_h, y = value)) + 
+    geom_point() + 
+    geom_line() +
+    vline_label(one_well_analysis, 'Time_Saturation') + 
+    hline_label(one_well_analysis, 'OD_Saturation')
+```
+
+
+- **`OD_Inflex`**:  OD at which the growth is no longer exponential base 2
+- **`Time_Inflex`**: Time at which growth is no longer exponential base 2. 
+    - Determined by examining the first and second derivatives
+
+```{r, echo=FALSE}
+one_well %>% 
+    ggplot(aes(x = runtime_h, y = value)) + 
+    geom_point() + 
+    geom_line() +
+    vline_label(one_well_analysis, 'Time_Inflex') + 
+    hline_label(one_well_analysis, 'OD_Inflex')
+```
+
+- **`t0_from_interval`**: estimate of the time that exponential growth begins 
+
+$$
+t_{0\_g0} = T_{nG} \cdot G\_by\_interval
+$$
+
+```{r, echo=FALSE}
+one_well %>% 
+    ggplot(aes(x = runtime_h, y = value)) + 
+    geom_point() + 
+    geom_line() +
+    vline_label(one_well_analysis, 't0_from_interval')
+```
+
+- **`Time_to_Each_n_Gens`**: $T_{nG}$ time required to reach $OD_{nG}$. 
+
+```{r}
+one_well %>% 
+    ggplot(aes(x = runtime_h, y = value)) + 
+    geom_point() + 
+    geom_line() +
+    vline_label(one_well_analysis, 'Time_to_each_n_Gens') +
+    hline_label(one_well_analysis, 'OD_Gen_Pt')
+```
+
+
+- `OD_Gen_Pt` = 0.46
+
+$$
+Avg\_G = \frac{Time\_to\_each\_n\_Gens}{OD\_Gen\_Pt}
+\\
+OD\_Gen\_Pt = 0.46
+\\
+n\ Generations\ at = 5
+\\
+Time\_to\_each\_n\_Gens = 9.78
+\\
+Avg\_G = \frac{Time\_to\_each\_n\_Gens}{nG_{OD\_Gen\_Pt}} = \frac{9.78}{5} = 1.956
+$$
+
+$ Avg_G               <dbl> 1.956
+$ Avg_G_inflex        <dbl> 1.977
+$ Avg_G_t12           <dbl> 1.956
+$ Avg_G_t8            <dbl> 2.028
+$ Avg_G_tcut          <dbl> 1.956
+
+
+Can I compute Avg_G_inflex properly now?
+```{r}
+Time_Inflex = 9.047
+Avg_G_inflex = 1.977
+OD_Inflex = 0.444
+OD_Gen_Pt = 0.46
+nG_at_OD_Gen_Pt = 5
+nG_at_Time_Inflex = (OD_Inflex / OD_Gen_Pt) * nG_at_OD_Gen_Pt
+nG_at_Time_Inflex
+Time_Inflex / nG_at_Time_Inflex
+Time_Inflex / Avg_G_inflex
+```
+
+$$
+OD_g \cdot exp(ln(2) \cdot x)
+\\
+5 \cdot exp(ln(2) \cdot 0.46)
+\\
+5 \cdot exp(ln(2) \cdot 0.44)
+$$

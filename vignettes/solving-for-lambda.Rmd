@@ -1,0 +1,23 @@
+---
+title: "Solving for lambda in growth curve"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+$$
+y = \mu_m \cdot t + \frac{a}{e} - \mu_m t_i
+\\
+0 = \mu_m \cdot \lambda + \frac{a}{e} - \mu_m t_i
+\\
+0 = \frac{ac}{e} \cdot \lambda + \frac{a}{e} - \frac{ac}{e} \cdot \frac{b}{c}
+\\
+0 = \frac{ac}{e} \cdot \lambda + \frac{a}{e} - \frac{ab}{e}
+\\
+\frac{ac}{e} \cdot \lambda =  \frac{ab}{e} - \frac{a}{e}
+\\
+c \lambda = b - 1
+\\
+\lambda = \frac{b - 1}{c}
+$$

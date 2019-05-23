@@ -1,0 +1,128 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# growr
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
+<!-- badges: end -->
+
+growr helps you with the pieces of growth curve analysis. 
+
+### High Level Interface
+
+Currently, growr has high level interface that is meant to be simple with reasonable defaults:
+
+1. `preprocess()` transform raw measures data into values suitable for summarization.
+2. `summarise_fit()` summarise a fit method into growth-curve metrics such as the fit's $A$, $\mu$, $\lambda$.
+3. `add_grouping()` and `add_groupings()` provide a convenient way to add relationships between sets of wells of a microtitre plate. Reference and target well designations can then be used to rescale summary metrics within groups (with for example, the provided `relatively()`).
+
+### lower level functions
+
+growr also exports an extensive set of models that make up a low level interface. Nearly all these functions have previously been used in growth curve analyses. *The majority of this functionality is not new*. It reflects a collection from various public source from this author's exploration. Citations provided in documentation of the individual methods.
+
+## Example
+
+
+#### Preprocessing
+
+`preprocess()` takes a vector of values and returns a transformed version. The details of the transformation depend on the argument choices but follows the preprocessing steps laid out in the precog paper.
+
+```{r preprocess}
+library(tidyverse)
+library(growr)
+
+data <- mtpview::mtp_example3
+data
+data %>% 
+  group_by(well) %>% 
+  mutate(measure_pp = preprocess(measure))
+
+```
+
+#### Summarising fit
+
+```{r}
+well_summaries <- data %>% 
+  group_by(well) %>% 
+  mutate(measure_pp = preprocess(measure)) %>% 
+  summarise(metrics = list(summarise_fit(x = runtime, y = measure_pp))) %>% 
+  unnest(cols = c(metrics))
+```
+
+
+#### Grouping
+
+`add_groupings()` takes one or more strings with grouping shorthand, expands them and joins them onto the provided data. The `source well(s)`->`target well(s)`. Sets of wells are specified with the familiar rectanuglar colon style notation: `A01:A12` is expanded to contain row A wells from column 1 to column 12 inclusive. 
+
+```{r groups}
+well_summaries %>% 
+  add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12)
+```
+
+A more complex example (using the internal fxn for demonstration of the parsing that goes on under the hood of `add_groupings()`)
+
+```{r}
+growr:::parse_grouping('p1!A01,B01:B04,H03->A01:H12', 8 , 12)
+```
+
+#### Relatively
+
+Rescale you data by group, for example:
+
+```{r}
+well_summaries %>% 
+  add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12) %>% 
+  group_by(group) %>% 
+  mutate(relative_mu = relatively(mu, is_ref)) 
+```
+
+---
+
+## Installation
+
+``` r
+# install.packages("growr")
+remotes::install_github("npjc/growr")
+```
+
+---
+
+<!-- ### Other examples -->
+
+
+<!-- ```{r preprocess} -->
+<!-- library(tidyverse) -->
+<!-- library(mtpview) -->
+<!-- library(growr) -->
+
+<!-- data <- mtpview::mtp_example3 -->
+<!-- one_well <- data %>% filter(well == 'A01') -->
+
+<!-- one_well %>% -->
+<!--     mutate(measure_pp = preprocess(measure, log_base = F, bg_subtract = F)) %>% -->
+<!--     ggplot(aes(x = runtime)) + -->
+<!--     geom_point(aes(y = measure)) + -->
+<!--     geom_point(aes(y = measure_pp), size = 0.25, color = "red") + -->
+<!--     theme_light() + -->
+<!--     theme(axis.ticks.y = element_blank(), -->
+<!--           axis.ticks.length = unit(.pt * 2, "pt"), -->
+<!--           panel.grid.minor.y = element_blank(), -->
+<!--           panel.grid.major.x = element_line(linetype = 'dashed', color = 'grey80'), -->
+<!--           panel.grid.minor.x = element_line(linetype = 'dashed', color = 'grey90'), -->
+<!--           axis.text.x = element_text(hjust = 0, vjust = 1, margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))) -->
+
+<!-- ``` -->
+
