@@ -35,6 +35,7 @@ init_gf_gompertz <- function(mCall, data, LHS) {
     setNames(pars[c("A", "mu", "lambda")], nm = mCall[c("A", "mu", "lambda")])
 }
 
+#' @export
 ss_gf_gompertz <- selfStart(
     ~A * exp(-exp(mu * exp(1) * (lambda - time) / A + 1.0)),
     initial = init_gf_gompertz,
@@ -61,6 +62,7 @@ init_gf_richards <- function(mCall, data, LHS) {
     setNames(pars, nm = mCall[c("A", "mu", "lambda", "nu")])
 }
 
+#' @export
 ss_gf_richards <- selfStart(
     ~A*(1.0 + nu*exp(1 + nu)*exp(mu*(1 + nu)^(1 + 1/nu)*(lambda - time)/A))^(-1/nu),
     initial = init_gf_richards,
@@ -87,6 +89,7 @@ init_gf_logistic <- function(mCall, data, LHS) {
     setNames(pars[c("A", "mu", "lambda")], nm = mCall[c("A", "mu", "lambda")])
 }
 
+#' @export
 ss_gf_logistic <- selfStart(
     ~A / (1 + exp(4 * mu * (lambda - time) / A + 2)),
     initial = init_gf_logistic,
