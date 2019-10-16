@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
+[![CRAN status](https://www.r-pkg.org/badges/version/growr)](https://CRAN.R-project.org/package=growr)
 <!-- badges: end -->
 
 growr helps you with the pieces of growth curve analysis. 
@@ -60,6 +61,7 @@ well_summaries <- data %>%
   mutate(measure_pp = preprocess(measure)) %>% 
   summarise(metrics = list(summarise_fit(x = runtime, y = measure_pp))) %>% 
   unnest(cols = c(metrics))
+well_summaries
 ```
 
 

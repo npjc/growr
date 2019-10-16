@@ -31,7 +31,7 @@ expand_range <- function(x, nrow, ncol) {
     query <- strsplit(x, split = ':', fixed = TRUE)[[1]]
     if (length(query) == 1)
         return(x)
-    wells <- well_labels(row_labels(seq_len(nrow)), col_labels(seq_len(ncol)))
+    wells <- mtputils::well_labels(nrow = nrow, ncol = ncol)
     m <- matrix(wells, nrow = nrow, ncol = ncol, byrow = TRUE)
 
     fr <- which(m == query[1], arr.ind = TRUE)
