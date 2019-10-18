@@ -22,6 +22,15 @@ knitr::opts_chunk$set(
 
 growr helps you with the pieces of growth curve analysis. 
 
+1. Preprocess growth curve data: `preprocess()`
+2. Summarise data with a family of functions: `fit_*()` 
+    - use built-in or your own `metric_*()` functions:
+    - use built-in or your own models via `fit_nls(formula = )`
+3
+
+
+
+
 ### High Level Interface
 
 Currently, growr has high level interface that is meant to be simple with reasonable defaults:
@@ -35,7 +44,6 @@ Currently, growr has high level interface that is meant to be simple with reason
 growr also exports an extensive set of models that make up a low level interface. Nearly all these functions have previously been used in growth curve analyses. *The majority of this functionality is not new*. It reflects a collection from various public source from this author's exploration. Citations provided in documentation of the individual methods.
 
 ## Example
-
 
 #### Preprocessing
 
@@ -56,12 +64,12 @@ data %>%
 #### Summarising fit
 
 ```{r}
-well_summaries <- data %>% 
-  group_by(well) %>% 
-  mutate(measure_pp = preprocess(measure)) %>% 
-  summarise(metrics = list(summarise_fit(x = runtime, y = measure_pp))) %>% 
-  unnest(cols = c(metrics))
-well_summaries
+# well_summaries <- data %>% 
+#   group_by(well) %>% 
+#   mutate(measure_pp = preprocess(measure)) %>% 
+#   summarise(metrics = list(summarise_fit(x = runtime, y = measure_pp))) %>% 
+#   unnest(cols = c(metrics))
+# well_summaries
 ```
 
 
@@ -70,14 +78,14 @@ well_summaries
 `add_groupings()` takes one or more strings with grouping shorthand, expands them and joins them onto the provided data. The `source well(s)`->`target well(s)`. Sets of wells are specified with the familiar rectanuglar colon style notation: `A01:A12` is expanded to contain row A wells from column 1 to column 12 inclusive. 
 
 ```{r groups}
-well_summaries %>% 
-  add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12)
+# well_summaries %>% 
+#   add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12)
 ```
 
 A more complex example (using the internal fxn for demonstration of the parsing that goes on under the hood of `add_groupings()`)
 
 ```{r}
-growr:::parse_grouping('p1!A01,B01:B04,H03->A01:H12', 8 , 12)
+# growr:::parse_grouping('p1!A01,B01:B04,H03->A01:H12', 8 , 12)
 ```
 
 #### Relatively
@@ -85,10 +93,10 @@ growr:::parse_grouping('p1!A01,B01:B04,H03->A01:H12', 8 , 12)
 Rescale you data by group, for example:
 
 ```{r}
-well_summaries %>% 
-  add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12) %>% 
-  group_by(group) %>% 
-  mutate(relative_mu = relatively(mu, is_ref)) 
+# well_summaries %>% 
+#   add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12) %>% 
+#   group_by(group) %>% 
+#   mutate(relative_mu = relatively(mu, is_ref)) 
 ```
 
 ---
@@ -102,29 +110,22 @@ remotes::install_github("npjc/growr")
 
 ---
 
-<!-- ### Other examples -->
+## Model Extension Interface:
+
+`growr` provides many model choices, but you may want to add your own. For this
+reason there is a standard way to add a new model interface
 
 
-<!-- ```{r preprocess} -->
-<!-- library(tidyverse) -->
-<!-- library(mtpview) -->
-<!-- library(growr) -->
+```{r, eval=FALSE}
+new_model_fxn <- function(x, y, ...) {
+  model_obj <- fit_new_model(x, y, ...)
+  
+  
+  output <- list(model = model_summary,
+                 component = component_summary,
+                 observation = observation_summary
+                 )
+}
+```
 
-<!-- data <- mtpview::mtp_example3 -->
-<!-- one_well <- data %>% filter(well == 'A01') -->
-
-<!-- one_well %>% -->
-<!--     mutate(measure_pp = preprocess(measure, log_base = F, bg_subtract = F)) %>% -->
-<!--     ggplot(aes(x = runtime)) + -->
-<!--     geom_point(aes(y = measure)) + -->
-<!--     geom_point(aes(y = measure_pp), size = 0.25, color = "red") + -->
-<!--     theme_light() + -->
-<!--     theme(axis.ticks.y = element_blank(), -->
-<!--           axis.ticks.length = unit(.pt * 2, "pt"), -->
-<!--           panel.grid.minor.y = element_blank(), -->
-<!--           panel.grid.major.x = element_line(linetype = 'dashed', color = 'grey80'), -->
-<!--           panel.grid.minor.x = element_line(linetype = 'dashed', color = 'grey90'), -->
-<!--           axis.text.x = element_text(hjust = 0, vjust = 1, margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))) -->
-
-<!-- ``` -->
 

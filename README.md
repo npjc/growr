@@ -13,6 +13,11 @@ status](https://www.r-pkg.org/badges/version/growr)](https://CRAN.R-project.org/
 
 growr helps you with the pieces of growth curve analysis.
 
+1.  Preprocess growth curve data: `preprocess()`
+2.  Summarise data with a family of functions: `fit_*()`
+      - use built-in or your own `metric_*()` functions:
+      - use built-in or your own models via `fit_nls(formula = )` 3
+
 ### High Level Interface
 
 Currently, growr has high level interface that is meant to be simple
@@ -48,12 +53,12 @@ paper.
 
 ``` r
 library(tidyverse)
-#> ── Attaching packages ──────────────────────────── tidyverse 1.2.1 ──
+#> ── Attaching packages ────────────────────────────────────────────── tidyverse 1.2.1 ──
 #> ✔ ggplot2 3.2.1.9000     ✔ purrr   0.3.2     
 #> ✔ tibble  2.1.3          ✔ dplyr   0.8.3     
 #> ✔ tidyr   1.0.0.9000     ✔ stringr 1.4.0     
 #> ✔ readr   1.3.1          ✔ forcats 0.4.0
-#> ── Conflicts ─────────────────────────────── tidyverse_conflicts() ──
+#> ── Conflicts ───────────────────────────────────────────────── tidyverse_conflicts() ──
 #> ✖ dplyr::filter() masks stats::filter()
 #> ✖ dplyr::lag()    masks stats::lag()
 library(growr)
@@ -97,26 +102,12 @@ data %>%
 #### Summarising fit
 
 ``` r
-well_summaries <- data %>% 
-  group_by(well) %>% 
-  mutate(measure_pp = preprocess(measure)) %>% 
-  summarise(metrics = list(summarise_fit(x = runtime, y = measure_pp))) %>% 
-  unnest(cols = c(metrics))
-well_summaries
-#> # A tibble: 96 x 4
-#>    well      A        mu lambda
-#>    <chr> <dbl>     <dbl>  <dbl>
-#>  1 A01    2.13 0.0000764 15652.
-#>  2 A02    2.36 0.0000817 14799.
-#>  3 A03    2.34 0.0000783 14045.
-#>  4 A04    1.97 0.0000616 19335.
-#>  5 A05    1.96 0.0000671 20799.
-#>  6 A06    1.89 0.0000633 21611.
-#>  7 A07    2.33 0.0000837  1057.
-#>  8 A08    2.32 0.0000830 15236.
-#>  9 A09    2.35 0.000100    926 
-#> 10 A10    2.34 0.0000906  3155.
-#> # … with 86 more rows
+# well_summaries <- data %>% 
+#   group_by(well) %>% 
+#   mutate(measure_pp = preprocess(measure)) %>% 
+#   summarise(metrics = list(summarise_fit(x = runtime, y = measure_pp))) %>% 
+#   unnest(cols = c(metrics))
+# well_summaries
 ```
 
 #### Grouping
@@ -128,56 +119,15 @@ familiar rectanuglar colon style notation: `A01:A12` is expanded to
 contain row A wells from column 1 to column 12 inclusive.
 
 ``` r
-well_summaries %>% 
-  add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12)
-#> # A tibble: 96 x 6
-#>    well      A        mu lambda group        is_ref
-#>    <chr> <dbl>     <dbl>  <dbl> <chr>        <lgl> 
-#>  1 A01    2.13 0.0000764 15652. A01->A02:A12 TRUE  
-#>  2 A02    2.36 0.0000817 14799. A01->A02:A12 FALSE 
-#>  3 A03    2.34 0.0000783 14045. A01->A02:A12 FALSE 
-#>  4 A04    1.97 0.0000616 19335. A01->A02:A12 FALSE 
-#>  5 A05    1.96 0.0000671 20799. A01->A02:A12 FALSE 
-#>  6 A06    1.89 0.0000633 21611. A01->A02:A12 FALSE 
-#>  7 A07    2.33 0.0000837  1057. A01->A02:A12 FALSE 
-#>  8 A08    2.32 0.0000830 15236. A01->A02:A12 FALSE 
-#>  9 A09    2.35 0.000100    926  A01->A02:A12 FALSE 
-#> 10 A10    2.34 0.0000906  3155. A01->A02:A12 FALSE 
-#> # … with 86 more rows
+# well_summaries %>% 
+#   add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12)
 ```
 
 A more complex example (using the internal fxn for demonstration of the
 parsing that goes on under the hood of `add_groupings()`)
 
 ``` r
-growr:::parse_grouping('p1!A01,B01:B04,H03->A01:H12', 8 , 12)
-#> $plate
-#> [1] "p1"
-#> 
-#> $group
-#> [1] "A01,B01:B04,H03->A01:H12"
-#> 
-#> $well
-#>  [1] "A01" "B01" "B02" "B03" "B04" "H03" "C01" "D01" "E01" "F01" "G01"
-#> [12] "H01" "A02" "C02" "D02" "E02" "F02" "G02" "H02" "A03" "C03" "D03"
-#> [23] "E03" "F03" "G03" "A04" "C04" "D04" "E04" "F04" "G04" "H04" "A05"
-#> [34] "B05" "C05" "D05" "E05" "F05" "G05" "H05" "A06" "B06" "C06" "D06"
-#> [45] "E06" "F06" "G06" "H06" "A07" "B07" "C07" "D07" "E07" "F07" "G07"
-#> [56] "H07" "A08" "B08" "C08" "D08" "E08" "F08" "G08" "H08" "A09" "B09"
-#> [67] "C09" "D09" "E09" "F09" "G09" "H09" "A10" "B10" "C10" "D10" "E10"
-#> [78] "F10" "G10" "H10" "A11" "B11" "C11" "D11" "E11" "F11" "G11" "H11"
-#> [89] "A12" "B12" "C12" "D12" "E12" "F12" "G12" "H12"
-#> 
-#> $is_ref
-#>  [1]  TRUE  TRUE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE
-#> [12] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-#> [23] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-#> [34] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-#> [45] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-#> [56] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-#> [67] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-#> [78] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-#> [89] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+# growr:::parse_grouping('p1!A01,B01:B04,H03->A01:H12', 8 , 12)
 ```
 
 #### Relatively
@@ -185,25 +135,10 @@ growr:::parse_grouping('p1!A01,B01:B04,H03->A01:H12', 8 , 12)
 Rescale you data by group, for example:
 
 ``` r
-well_summaries %>% 
-  add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12) %>% 
-  group_by(group) %>% 
-  mutate(relative_mu = relatively(mu, is_ref)) 
-#> # A tibble: 96 x 7
-#> # Groups:   group [2]
-#>    well      A        mu lambda group        is_ref relative_mu
-#>    <chr> <dbl>     <dbl>  <dbl> <chr>        <lgl>        <dbl>
-#>  1 A01    2.13 0.0000764 15652. A01->A02:A12 TRUE         1    
-#>  2 A02    2.36 0.0000817 14799. A01->A02:A12 FALSE        1.07 
-#>  3 A03    2.34 0.0000783 14045. A01->A02:A12 FALSE        1.02 
-#>  4 A04    1.97 0.0000616 19335. A01->A02:A12 FALSE        0.805
-#>  5 A05    1.96 0.0000671 20799. A01->A02:A12 FALSE        0.878
-#>  6 A06    1.89 0.0000633 21611. A01->A02:A12 FALSE        0.827
-#>  7 A07    2.33 0.0000837  1057. A01->A02:A12 FALSE        1.09 
-#>  8 A08    2.32 0.0000830 15236. A01->A02:A12 FALSE        1.09 
-#>  9 A09    2.35 0.000100    926  A01->A02:A12 FALSE        1.31 
-#> 10 A10    2.34 0.0000906  3155. A01->A02:A12 FALSE        1.19 
-#> # … with 86 more rows
+# well_summaries %>% 
+#   add_groupings(c("A01->A02:A12", "B01:H01->B02:H12"), nrow = 8, ncol = 12) %>% 
+#   group_by(group) %>% 
+#   mutate(relative_mu = relatively(mu, is_ref)) 
 ```
 
 -----
@@ -217,42 +152,19 @@ remotes::install_github("npjc/growr")
 
 -----
 
-<!-- ### Other examples -->
+## Model Extension Interface:
 
-<!-- ```{r preprocess} -->
+`growr` provides many model choices, but you may want to add your own.
+For this reason there is a standard way to add a new model interface
 
-<!-- library(tidyverse) -->
-
-<!-- library(mtpview) -->
-
-<!-- library(growr) -->
-
-<!-- data <- mtpview::mtp_example3 -->
-
-<!-- one_well <- data %>% filter(well == 'A01') -->
-
-<!-- one_well %>% -->
-
-<!--     mutate(measure_pp = preprocess(measure, log_base = F, bg_subtract = F)) %>% -->
-
-<!--     ggplot(aes(x = runtime)) + -->
-
-<!--     geom_point(aes(y = measure)) + -->
-
-<!--     geom_point(aes(y = measure_pp), size = 0.25, color = "red") + -->
-
-<!--     theme_light() + -->
-
-<!--     theme(axis.ticks.y = element_blank(), -->
-
-<!--           axis.ticks.length = unit(.pt * 2, "pt"), -->
-
-<!--           panel.grid.minor.y = element_blank(), -->
-
-<!--           panel.grid.major.x = element_line(linetype = 'dashed', color = 'grey80'), -->
-
-<!--           panel.grid.minor.x = element_line(linetype = 'dashed', color = 'grey90'), -->
-
-<!--           axis.text.x = element_text(hjust = 0, vjust = 1, margin = margin(t = 0, r = 0, b = 0, l = 0, unit = "pt"))) -->
-
-<!-- ``` -->
+``` r
+new_model_fxn <- function(x, y, ...) {
+  model_obj <- fit_new_model(x, y, ...)
+  
+  
+  output <- list(model = model_summary,
+                 component = component_summary,
+                 observation = observation_summary
+                 )
+}
+```

@@ -36,7 +36,8 @@ gf_logistic <- function(time, A, mu,lambda) {
 #' @param tshift `<num>` control the location (time) of the second increase after the function enters a first saturation plateau
 #' @export
 gf_gompertz_exp <- function(time, A, mu, lambda, alpha = 0.1, tshift = max(time) / 10) {
-    A * exp(-exp(mu * exp(1) * (lambda - time) / A + 1.0)) + A * exp(alfa * (time - tshift))
+
+    A * exp(-exp(mu* e *(lambda - x) / A + 1.0)) + A * exp(alpha * (x - xshift))
 }
 
 #' @rdname grofit

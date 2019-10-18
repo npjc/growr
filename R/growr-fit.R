@@ -10,3 +10,4 @@ summarise_fit <- function(x, y, method = "smooth.spline") {
     res <- f(data)
     tibble::as_tibble(res[c("A", "mu", "lambda")])
 }
+
