@@ -71,3 +71,62 @@ metric_auc.nls <- function(fit, x, ...) {
 metric_coefs <- function(fit, ...) {
     tibble::as_tibble(as.list(stats::coef(fit)))
 }
+
+#' Minimum Doubling or Generation Time
+#'
+#' Finds the point of maximum growth rate then treating that as the midpoint
+#' of a doubling period, computes the doubling time at point.
+#'
+#' @export
+metric_min_dbl <- function(x, y, dy, ...) {
+    i <- which.max(dy)
+    m <- dy[i]
+    midpoint_x = x[i]
+
+    midpoint <- y[i]
+    y2 <- midpoint * sqrt(2)
+    y1 <- midpoint * sqrt(.5)
+
+    # m = ∆y / ∆x; ∆x = ∆y / m = (y2 - y1) / m
+    xdbl <- (y2 - y1) / m
+
+    tibble::tibble(
+        min_dbl = xdbl,
+        min_dbl_midpoint_y = midpoint,
+        min_dbl_midpoint_x = midpoint_x,
+        min_dbl_y1 = y1,
+        min_dbl_y2 = y2
+    )
+}
+
+#' Average Doubling or Generation Time from start until max rate.
+#'
+#' x,y coordinates of first point of maximum dy. slope (m), y intercept (b),
+#' x intercept (y0_x) of tangent line
+#'
+#' Finds the point of maximum growth rate then treating that as the end point,
+#' computes the average
+#'
+#' @keywords internal
+metric_avg_dbl <- function(x, y, dy, ...) {
+    i <- which.max(dy)
+    m <- dy[i]
+    dy_max_x <- x[i]
+    dy_max_y <- y[i]
+    y0 <- min(y)
+    x0 <- min(x)
+
+    avg_m = (dy_max_y - y0) / (dy_max_x - x0)
+    n_dbl = log2(dy_max_y / y0)
+    avg_dbl = n_dbl / avg_m
+
+    tibble::tibble(
+        avg_dbl = avg_dbl,
+        avg_dbl_y1 = y0,
+        avg_dbl_y2 = dy_max_y,
+        avg_dbl_x1 = x0,
+        avg_dbl_x2 = dy_max_x,
+        avg_dbl_n = n_dbl
+    )
+}
+

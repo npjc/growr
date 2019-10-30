@@ -1,6 +1,6 @@
 Package: growr
 Title: High level functions to help summarise growth curve fits.
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: person("Nicolas", "Coutin", , "nicolas.coutin@gmail.com", c("aut", "cre"), comment = c(ORCID = "0000-0001-9336-226X"))
 Maintainer: Nicolas Coutin <nicolas.coutin@gmail.com>
 Description: Preprocessing, summarising and flexible grouping specification of growth curves.

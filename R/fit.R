@@ -1,5 +1,5 @@
 #' @export
-fit_smooth_spline <- function(x, y, metric_funs = list(metric_ymax, metric_dymax, metric_auc), ...) {
+fit_smooth_spline <- function(x, y, metric_funs = list(metric_ymax, metric_dymax, metric_auc, metric_min_dbl), ...) {
     fit <- smooth.spline(x, y, cv = TRUE, ...)
 
     md <- broom::glance(fit)
@@ -20,7 +20,7 @@ fit_smooth_spline <- function(x, y, metric_funs = list(metric_ymax, metric_dymax
 }
 
 #' @export
-fit_nls <- function(x, y, formula, start, metric_funs = list(metric_coefs, metric_ymax, metric_dymax, metric_auc), ...) {
+fit_nls <- function(x, y, formula, start, metric_funs = list(metric_coefs, metric_ymax, metric_dymax, metric_auc, metric_min_dbl), ...) {
     data <- data.frame(x = x, y = y)
     fit <- nls(formula = formula, start = start, data = data)
 
